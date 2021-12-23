@@ -36,30 +36,40 @@ app.post('/api/register',(req, res)=>{
             let privateUUID = UUID();
             db.getConnection((err, connection)=>{
                 if(err) return res.send(400);
+                if(userData.payload.password === undefined || userData.payload.password === ''){
+                    console.log('Password undefined');
+                    res.sendStatus(400);
+                }
+                else if(userData.payload.username === undefined || userData.payload.username === ''){
+                    console.log('Username undefined');
+                    res.sendStatus(400);
+                }
+                else{
 
-                db.query(`SELECT * FROM users WHERE username = '${userData.payload.username}'`, (error, result, fields)=>{
-                    if(error) throw error;
-                    if(result.length == 0){
-                        db.query(`INSERT INTO users(UUID, username, password) VALUES ('${privateUUID}','${userData.payload.username}', '${hashedPass}')`, (error, result, fields)=>{
-                            if(error) throw error;
-                            let response = {success:true, UUID:privateUUID};
+                    db.query(`SELECT * FROM users WHERE username = '${userData.payload.username}'`, (error, result, fields)=>{
+                        if(error) throw error;
+                        if(result.length == 0){
+                            db.query(`INSERT INTO users(UUID, username, password) VALUES ('${privateUUID}','${userData.payload.username}', '${hashedPass}')`, (error, result, fields)=>{
+                                if(error) throw error;
+                                let response = {success:true, UUID:privateUUID};
+                                signPayload(response)
+                                .then(response=>{
+                                    res.json(response);
+                                });
+                                connection.release();
+                            });
+                        }
+                        else{
+                            let response = {existing:true};
                             signPayload(response)
                             .then(response=>{
                                 res.json(response);
                             });
                             connection.release();
-                        });
-                    }
-                    else{
-                        let response = {existing:true};
-                        signPayload(response)
-                        .then(response=>{
-                            res.json(response);
-                        });
-                        connection.release();
-                    }
-                    
-                });
+                        }
+                        
+                    });
+                }
             });
                 
         })
